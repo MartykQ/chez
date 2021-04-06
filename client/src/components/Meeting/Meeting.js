@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import queryString from 'query-string';
 import io from 'socket.io-client';
-
+import Webcam from "react-webcam";
 import Messages from '../Messages/Messages';
 
 
@@ -21,12 +21,33 @@ const Meeting = ( { location } ) => {
     const [messages, setMessages] = useState([]);
     const [message, setMessage] = useState('');
 
+    const myVideoRef = useRef(null);
+    const strangerVideoRef = useRef(null);
 
     useEffect(() => {
+        getVideo()
+    }, [myVideoRef]);
+    const getVideo = () => {
+        navigator.mediaDevices
+          .getUserMedia({ video: { width: 300 } })
+          .then(stream => {
+            let video = myVideoRef.current;
+            video.srcObject = stream;
+            video.play();
+          })
+          .catch(err => {
+            console.error("error:", err);
+          });
+      };
+
+      
+
+    useEffect(() => {
+        console.log("UE")
         const { name, room } = queryString.parse(location.search);
         setName(name);
         setRoom(room); 
-
+        
         socket = io(SOCKET_ENDPOINT, connectionOptions);
 
 
@@ -38,19 +59,15 @@ const Meeting = ( { location } ) => {
             //Unmounting
             // socket.emit('disconnect');
             socket.off();
-
         };
-
-
     }, [location.search, SOCKET_ENDPOINT]);
 
 
     useEffect(() => {
         socket.on('message', (message) => {
-            setMessages([...messages, message]);
-
+            setMessages(messages => [...messages, message]);
         })
-    }, [messages])
+    }, [])
 
 
     //sending messages
@@ -64,12 +81,13 @@ const Meeting = ( { location } ) => {
         }
     }
 
-    console.log(message, messages)
-
-
     return (
         <React.Fragment>
             <h1>Meeting</h1>
+            <div>
+                <div><video ref={myVideoRef}/></div>
+                <div></div>
+            </div>
             <div className="outerContainer">
                 <div className="container">
 
