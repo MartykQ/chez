@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import queryString from 'query-string';
 import io from 'socket.io-client';
-import Webcam from "react-webcam";
 import Messages from '../Messages/Messages';
-
+import Peer from 'peerjs';
 
 let socket;
+let myPeer;
 const SOCKET_ENDPOINT = 'localhost:5000'
 var connectionOptions =  {
     "force new connection" : true,
@@ -20,54 +20,84 @@ const Meeting = ( { location } ) => {
     const [room, setRoom] = useState('');
     const [messages, setMessages] = useState([]);
     const [message, setMessage] = useState('');
+    const [myPeerId, setMyPeerId] = useState(null);
 
     const myVideoRef = useRef(null);
     const strangerVideoRef = useRef(null);
 
-    useEffect(() => {
-        getVideo()
-    }, [myVideoRef]);
-    const getVideo = () => {
-        navigator.mediaDevices
-          .getUserMedia({ video: { width: 300 } })
-          .then(stream => {
-            let video = myVideoRef.current;
-            video.srcObject = stream;
-            video.play();
-          })
-          .catch(err => {
-            console.error("error:", err);
-          });
-      };
-
-      
 
     useEffect(() => {
-        console.log("UE")
+        console.log(1);
+
         const { name, room } = queryString.parse(location.search);
         setName(name);
         setRoom(room); 
-        
+
         socket = io(SOCKET_ENDPOINT, connectionOptions);
-
-
-        socket.emit('join', {name, room}, (e) => {
-            console.log("Server responded with" + e);
-        });
         
+        
+        myPeer = new Peer();
+        myPeer.on('open', peerId => {
+            console.log("Setting my peer to ", peerId);
+            setMyPeerId(peerId);
+            navigator.mediaDevices.getUserMedia({ video: true})
+            .then(stream => {
+                //Got video stream
+                let video = myVideoRef.current;
+                video.srcObject = stream;
+                video.play();
+                
+
+                console.log(`Joinging with info ${name}/${room}`);
+                socket.emit('join', {name, room, peerId}, (e) => {
+                    console.log("Server responded with" + e);
+                })
+
+                console.log("Ready to answer...")
+                myPeer.on('call', call => {
+                    console.log("Answering a call")
+                    call.answer(stream)
+                    call.on('stream', strangerVideoStream => {
+                        strangerVideoRef.current.srcObject = strangerVideoStream;
+                        strangerVideoRef.current.play();
+                    })
+                })
+
+                socket.on('user-connected', ({peerId}) => {
+                    console.log(`Calling new user: ${peerId}`)
+                    const call = myPeer.call(peerId, stream);
+                    call.on('stream', strangerVideoStream => {
+                        strangerVideoRef.current.srcObject = strangerVideoStream;
+                        strangerVideoRef.current.play();
+                    })
+                })
+            })
+            .catch(err => {
+                console.error("error:", err);
+            });
+        })
+
+        socket.on('user-disconnected', ({peerId}) => {
+            console.log(`${peerId} has disconnected`)
+        })
+
+
         return () => {
             //Unmounting
-            // socket.emit('disconnect');
+            console.log("When disc my peer is:", myPeerId)
+            socket.emit('my_disconnect', {name, room, myPeerId});
             socket.off();
         };
-    }, [location.search, SOCKET_ENDPOINT]);
+    }, [location.search, SOCKET_ENDPOINT, myVideoRef]);
 
 
     useEffect(() => {
         socket.on('message', (message) => {
             setMessages(messages => [...messages, message]);
         })
+
     }, [])
+
 
 
     //sending messages
@@ -86,7 +116,7 @@ const Meeting = ( { location } ) => {
             <h1>Meeting</h1>
             <div>
                 <div><video ref={myVideoRef}/></div>
-                <div></div>
+                <div><video ref={strangerVideoRef} /></div>
             </div>
             <div className="outerContainer">
                 <div className="container">
