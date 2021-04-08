@@ -21,64 +21,93 @@ const Meeting = ( { location } ) => {
     const [messages, setMessages] = useState([]);
     const [message, setMessage] = useState('');
     const [myPeerId, setMyPeerId] = useState(null);
+    const [usersInCall, setUsersInCall] = useState(['me']);
 
     const myVideoRef = useRef(null);
     const strangerVideoRef = useRef(null);
 
 
-    useEffect(() => {
-        console.log(1);
+    const updateRoomInfoFromLocation = () => {
 
-        const { name, room } = queryString.parse(location.search);
+        const {name, room} = queryString.parse(location.search);
         setName(name);
-        setRoom(room); 
+        setRoom(room);
+        return { parsedName: name, parsedRoom: room }
+    }
+
+    const getUserDataStream = () => {
+
+        let audio = false;
+        let video = true;
+        return new Promise( (resolve, reject) => {
+            navigator.mediaDevices.getUserMedia({video, audio})
+                .then(dataStream => {
+                    resolve(dataStream);
+                }).catch(() => {
+                    resolve(null);
+                })
+        })
+    }
+
+    const attachStreamToVideo = (stream, videoRef) => {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+    } 
+
+    const answerCall = (call, stream) => {
+        console.log("Answering a call")
+        call.answer(stream)
+        call.on('stream', strangerVideoStream => {
+            attachStreamToVideo(strangerVideoStream, strangerVideoRef);
+        })
+    }
+
+    const callNewPeer = (peerId, stream) => {
+        console.log(`Calling new user: ${peerId}`)
+        const call = myPeer.call(peerId, stream);
+        call.on('stream', strangerVideoStream => {
+            attachStreamToVideo(strangerVideoStream, strangerVideoRef);
+        })
+    }
+
+    useEffect(() => {
+
+        const { parsedName, parsedRoom } = updateRoomInfoFromLocation();
 
         socket = io(SOCKET_ENDPOINT, connectionOptions);
-        
-        
         myPeer = new Peer();
+
         myPeer.on('open', peerId => {
+
             console.log("Setting my peer to ", peerId);
             setMyPeerId(peerId);
-            navigator.mediaDevices.getUserMedia({ video: true})
-            .then(stream => {
-                //Got video stream
-                let video = myVideoRef.current;
-                video.srcObject = stream;
-                video.play();
-                
 
-                console.log(`Joinging with info ${name}/${room}`);
-                socket.emit('join', {name, room, peerId}, (e) => {
-                    console.log("Server responded with" + e);
-                })
+            getUserDataStream().then(stream => {
+                
+                attachStreamToVideo(stream, myVideoRef);
+                
+                console.log(`Joinging with info ${{name: parsedName, room: parsedRoom, peerId}}`);
+                socket.emit('join', {name: parsedName, room: parsedRoom, peerId});
 
                 console.log("Ready to answer...")
-                myPeer.on('call', call => {
-                    console.log("Answering a call")
-                    call.answer(stream)
-                    call.on('stream', strangerVideoStream => {
-                        strangerVideoRef.current.srcObject = strangerVideoStream;
-                        strangerVideoRef.current.play();
-                    })
-                })
+                myPeer.on('call', (call) => answerCall(call, stream));
 
-                socket.on('user-connected', ({peerId}) => {
-                    console.log(`Calling new user: ${peerId}`)
-                    const call = myPeer.call(peerId, stream);
-                    call.on('stream', strangerVideoStream => {
-                        strangerVideoRef.current.srcObject = strangerVideoStream;
-                        strangerVideoRef.current.play();
-                    })
+                socket.on('user-connected', (peerId) => {
+                    callNewPeer(peerId, stream);
+                    setUsersInCall([...usersInCall, peerId])
                 })
             })
             .catch(err => {
-                console.error("error:", err);
+                console.error("error when getting user media", err);
             });
         })
 
         socket.on('user-disconnected', ({peerId}) => {
             console.log(`${peerId} has disconnected`)
+        })
+
+        socket.on('message', (message) => {
+            setMessages(messages => [...messages, message]);
         })
 
 
@@ -91,19 +120,8 @@ const Meeting = ( { location } ) => {
     }, [location.search, SOCKET_ENDPOINT, myVideoRef]);
 
 
-    useEffect(() => {
-        socket.on('message', (message) => {
-            setMessages(messages => [...messages, message]);
-        })
-
-    }, [])
-
-
-
-    //sending messages
     const sendMessage = (e) => {
         e.preventDefault();
-
         if(message) {
             socket.emit('sendMessage', message, () => {
                 setMessage('');
@@ -115,9 +133,14 @@ const Meeting = ( { location } ) => {
         <React.Fragment>
             <h1>Meeting</h1>
             <div>
-                <div><video ref={myVideoRef}/></div>
-                <div><video ref={strangerVideoRef} /></div>
+                <div><video ref={myVideoRef} width={100} height={100}/></div>
+                <div><video ref={strangerVideoRef}  width={100} height={100}/></div>
             </div>
+
+            <div>
+                {usersInCall.map((u, i) => <div key={i}>{u}</div>)}
+            </div>
+
             <div className="outerContainer">
                 <div className="container">
 
