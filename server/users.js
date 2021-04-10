@@ -1,20 +1,19 @@
 const users = [];
 
 
-const addUser = ({ id, name, room }) => {
+const addUser = ({ id, name, room, peerId }) => {
 
     name = name.trim().toLowerCase();
     room = room.trim().toLowerCase();
 
-    const existingUser = users.find(u => u.room === room && u.name === name)
+    const existingUser = users.find(u => u.id === id)
     if (existingUser) {
-        //same name already exists
         return {
-            error: 'User with that name already exists!'
+            error: 'This user is already in that room'
         };
     }
 
-    const user = { id, name, room };
+    const user = { id, name, room, peerId };
     users.push(user);
 
     return  { user }
@@ -37,9 +36,14 @@ const getUserInRoom = (room) => {
     return users.filter(u => u.room === room);
 };
 
+const getAllConnectedUsers = () => {
+    return users;
+}
+
 module.exports = {
     addUser,
     getUser,
     removeUser,
-    getUserInRoom
+    getUserInRoom,
+    getAllConnectedUsers
 }
