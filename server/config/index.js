@@ -1,5 +1,6 @@
 let config = {
-    logDir: 'logs'
-}
+    logDir: "logs",
+    PORT: "5000",
+};
 
 module.exports = config;
