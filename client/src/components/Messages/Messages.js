@@ -1,3 +1,4 @@
+import { Card } from '@material-ui/core';
 import React from 'react';
 
 
@@ -6,7 +7,7 @@ const Messages = ({messages, name}) => {
         <div>
             <div>Messages: </div>
             <div>
-                {messages.map((m, i) => <div key={i}>{m.text}</div>)}
+                {messages.map((m, i) => <Card key={i} variant="outlined">{m.text}</Card>)}
             </div>
         </div>
     )

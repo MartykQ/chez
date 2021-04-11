@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import useDynamicRefs from "use-dynamic-refs";
 import "./Meeting.css";
 import VideoScreen from '../VideoScreen/VideoScreen';
+import { Button, TextField, Typography } from "@material-ui/core";
 
 
 let socket;
@@ -162,9 +163,9 @@ const Meeting = ({ location }) => {
   console.log("Rendering component");
   return (
     <React.Fragment>
-      <h1>Meeting in room '{room}'</h1>
+      <Typography variant="h3">Meerting in a room {room}</Typography>
       <Link to="/">
-        <button type="submit">Leave</button>
+        <Button type="submit" variant="contained" color="primary">Leave</Button>
       </Link>
 
       <div className="videoGrid">
@@ -188,7 +189,8 @@ const Meeting = ({ location }) => {
       <div className="outerContainer">
         <div className="container">
           <Messages messages={messages} name={name} />
-          <input
+          <TextField
+          variant="outlined"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={(e) => (e.key === "Enter" ? sendMessage(e) : null)}
