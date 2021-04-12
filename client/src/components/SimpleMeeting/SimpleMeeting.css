@@ -1,0 +1,14 @@
+.videoRefStyle {
+    border: 3px solid black;
+}
+
+.myCamera {
+    border: 3px solid rgb(204, 63, 63);
+}
+
+.videoGrid {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    border: 1px solid black;
+}
+

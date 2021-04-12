@@ -11,7 +11,8 @@ import { Button, TextField, Typography } from "@material-ui/core";
 
 let socket;
 let myPeer;
-const SOCKET_ENDPOINT = "localhost:5000";
+//const SOCKET_ENDPOINT = "localhost:5000";
+const SOCKET_ENDPOINT = "https://chez-backend.herokuapp.com";
 var connectionOptions = {
     "force new connection": true,
     reconnectionAttempts: "Infinity",

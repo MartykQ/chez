@@ -3,8 +3,8 @@ import "./App.css";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 
 import Join from "./components/Join/Join";
-import Meeting from "./components/Meeting/Meeting";
 import { createMuiTheme, ThemeProvider, Box } from "@material-ui/core";
+import SimpleMeeting from "./components/SimpleMeeting/SimpleMeeting";
 
 const theme = createMuiTheme({
     palette: {
@@ -18,7 +18,7 @@ const App = () => {
             <Box bgcolor="primary.secondary" display="flex" flexDirection="column" height="100vh">
                 <Router>
                     <Route path="/" exact component={Join} />
-                    <Route path="/meet" exact component={Meeting} />
+                    <Route path="/meet" exact component={SimpleMeeting} />
                 </Router>
             </Box>
         </ThemeProvider>

@@ -10,7 +10,7 @@ class ExpressLoader {
     const app = express();
     const server = http.createServer(app);
 
-    const PORT = config.PORT || 5001;
+    const PORT = process.env.PORT || 5000;
 
     app.get("/status", (req, res) => {
       res.status(200).end();
