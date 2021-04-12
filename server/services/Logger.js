@@ -3,17 +3,14 @@ const winston = require("winston");
 const logger = winston.createLogger({
     level: "info",
     format: winston.format.json(),
-    transports: [        
-        new winston.transports.File( { filename: 'error.log', level: 'error'}),
-        new winston.transports.File( { filename: 'logs.log'})
+    transports: [
+        new winston.transports.File({ filename: "logs/error.log", level: "error" }),
+        new winston.transports.File({ filename: "logs/logs.log" }),
     ],
     defaultMeta: {
-        service: 'chez-backend',
-        time: new Date().toISOString()
-    }
-
-
-    
+        service: "chez-backend",
+        time: new Date().toISOString(),
+    },
 });
 
 module.exports = logger;
