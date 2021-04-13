@@ -18,7 +18,6 @@ const Join = () => {
                 <Typography variant="h3" fullWidth>
                     Join room
                 </Typography>
-                <CssBaseline />
                 <TextField
                     variant="outlined"
                     placeholder="name"

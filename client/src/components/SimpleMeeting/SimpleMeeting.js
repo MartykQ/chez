@@ -1,14 +1,16 @@
-import React, { useEffect, useRef, useState } from "react";
+import { Button, TextField, Typography } from "@material-ui/core";
+import Chessboard from 'chessboardjsx';
 import queryString from "query-string";
+import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import Peer from "simple-peer";
 import io from "socket.io-client";
 import Messages from "../Messages/Messages";
-import Peer from "simple-peer";
-import { Link } from "react-router-dom";
-import "./SimpleMeeting.css";
-import VideoScreen from "../VideoScreen/VideoScreen";
-import { Button, TextField, Typography } from "@material-ui/core";
 import Video from "../Video/Video";
+import VideoScreen from "../VideoScreen/VideoScreen";
+import "./SimpleMeeting.css";
 
+// const SOCKET_ENDPOINT = "https://chez-backend.herokuapp.com";
 const SOCKET_ENDPOINT = "localhost:5000";
 var connectionOptions = {
     "force new connection": true,
@@ -17,7 +19,6 @@ var connectionOptions = {
     transports: ["websocket"],
 };
 
-// const SOCKET_ENDPOINT = "https://chez-backend.herokuapp.com";
 
 const SimpleMeeting = ({ location }) => {
     const [name, setName] = useState("");
@@ -78,12 +79,10 @@ const SimpleMeeting = ({ location }) => {
 
         socketRef.current.on("user-disconnected", (user) => {
             console.log(`${user.name} has disconnected`);
-            //setUsersInCall(usersInCall.filter((u) => u.id !== data.peerId));
             setPeers(peers.filter((p) => p.id !== user.id));
         });
 
         return () => {
-            //Unmounting
             socketRef.current.disconnect({ name, room });
             console.log("Disconnecting");
         };
@@ -149,12 +148,10 @@ const SimpleMeeting = ({ location }) => {
     };
 
     const toggleCam = () => {
-        console.log("asd");
         userVideoStream.current.getVideoTracks().forEach((track) => {
             console.log(track);
             track.enabled = !camToggled;
         });
-
         setCamToggled(!camToggled);
     };
 
@@ -179,7 +176,7 @@ const SimpleMeeting = ({ location }) => {
                     </VideoScreen>
                 ))}
             </div>
-
+                <Chessboard position='start'/>
             <div className="outerContainer">
                 <div className="container">
                     <Messages messages={messages} name={name} />
