@@ -3,7 +3,9 @@ import "./App.css";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 
 import Join from "./components/Join/Join";
-import { createMuiTheme, ThemeProvider, Box } from "@material-ui/core";
+import { Box, CssBaseline,  } from "@material-ui/core";
+import { createMuiTheme } from '@material-ui/core/styles';
+import { MuiThemeProvider } from '@material-ui/core/styles';
 import SimpleMeeting from "./components/SimpleMeeting/SimpleMeeting";
 
 const theme = createMuiTheme({
@@ -14,14 +16,15 @@ const theme = createMuiTheme({
 
 const App = () => {
     return (
-        <ThemeProvider theme={theme}>
+        <MuiThemeProvider theme={theme}>
+            <CssBaseline />
             <Box bgcolor="primary.secondary" display="flex" flexDirection="column" height="100vh">
                 <Router>
                     <Route path="/" exact component={Join} />
                     <Route path="/meet" exact component={SimpleMeeting} />
                 </Router>
             </Box>
-        </ThemeProvider>
+        </MuiThemeProvider>
     );
 };
 
