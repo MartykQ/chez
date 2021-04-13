@@ -1,5 +1,5 @@
-import { Button, TextField, Typography } from "@material-ui/core";
-import Chessboard from 'chessboardjsx';
+import { Button, TextField, Typography, Grid } from "@material-ui/core";
+import Chessboard from "chessboardjsx";
 import queryString from "query-string";
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -18,7 +18,6 @@ var connectionOptions = {
     timeout: 10000,
     transports: ["websocket"],
 };
-
 
 const SimpleMeeting = ({ location }) => {
     const [name, setName] = useState("");
@@ -74,7 +73,9 @@ const SimpleMeeting = ({ location }) => {
         });
 
         socketRef.current.on("message", (message) => {
-            setMessages((messages) => [...messages, message]);
+            if (message.text === "clear") {
+                setMessages([]);
+            } else setMessages((messages) => [...messages, message]);
         });
 
         socketRef.current.on("user-disconnected", (user) => {
@@ -164,30 +165,37 @@ const SimpleMeeting = ({ location }) => {
                     Leave
                 </Button>
             </Link>
-            <Button onClick={toggleCam}>Hide me</Button>
-            <div className="videoGrid">
-                <VideoScreen>
-                    <video ref={userVideo} muted autoPlay />
-                </VideoScreen>
 
-                {peers.map((peer, i) => (
-                    <VideoScreen userName={peer.name}>
-                        <Video key={i} peer={peer}></Video>
-                    </VideoScreen>
-                ))}
-            </div>
-                <Chessboard position='start'/>
-            <div className="outerContainer">
-                <div className="container">
-                    <Messages messages={messages} name={name} />
-                    <TextField
-                        variant="outlined"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyPress={(e) => (e.key === "Enter" ? sendMessage(e) : null)}
-                    />
+            <Grid container direction="row" justify="space-around" alignItems="center">
+                <div>
+                    <Button onClick={toggleCam}>Hide me</Button>
+                    <Grid container direction="column" justify="flex-start" alignItems="center">
+                        <VideoScreen>
+                            <video ref={userVideo} muted autoPlay />
+                        </VideoScreen>
+
+                        {peers.map((peer, i) => (
+                            <VideoScreen userName={peer.name}>
+                                <Video key={i} peer={peer}></Video>
+                            </VideoScreen>
+                        ))}
+                    </Grid>
                 </div>
-            </div>
+                <div>
+                    <Chessboard position="start" />
+                </div>
+                <div>
+                    <div className="container">
+                        <Messages messages={messages} name={name} />
+                        <TextField
+                            variant="outlined"
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            onKeyPress={(e) => (e.key === "Enter" ? sendMessage(e) : null)}
+                        />
+                    </div>
+                </div>
+            </Grid>
         </React.Fragment>
     );
 };
