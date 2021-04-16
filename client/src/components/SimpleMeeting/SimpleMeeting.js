@@ -1,13 +1,15 @@
-import { Button, TextField, Typography, Grid } from "@material-ui/core";
-import Chessboard from "chessboardjsx";
+import { Button, Grid, TextField, Typography } from "@material-ui/core";
 import queryString from "query-string";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import Peer from "simple-peer";
 import io from "socket.io-client";
 import Messages from "../Messages/Messages";
 import Video from "../Video/Video";
 import VideoScreen from "../VideoScreen/VideoScreen";
+import ChessBoardContainer from "../ChessBoardContainer/ChessBoardContainer";
+import { SocketContext } from "../../SocketContext";
+
 import "./SimpleMeeting.css";
 
 // const SOCKET_ENDPOINT = "https://chez-backend.herokuapp.com";
@@ -29,34 +31,29 @@ const SimpleMeeting = ({ location }) => {
     const [peers, setPeers] = useState([]);
     const peersRef = useRef([]);
     const userVideo = useRef();
-    const socketRef = useRef();
+    const socket = useContext(SocketContext);
     const userVideoStream = useRef();
 
     useEffect(() => {
         const { parsedName, parsedRoom } = updateRoomInfoFromLocation();
-        socketRef.current = io(SOCKET_ENDPOINT, connectionOptions);
-
+        console.log(socket)
         getUserDataStream().then((stream) => {
             userVideoStream.current = stream;
             userVideo.current.srcObject = stream;
-            socketRef.current.emit(
-                "join room",
-                { name: parsedName, room: parsedRoom },
-                (allUsers) => {
-                    const peers = [];
-                    allUsers.forEach((user) => {
-                        const peer = createPeer(user.id, socketRef.current.id, stream);
-                        peersRef.current.push({
-                            peerID: user.id,
-                            peer,
-                        });
-                        peers.push(peer);
+            socket.emit("join room", { name: parsedName, room: parsedRoom }, (allUsers) => {
+                const peers = [];
+                allUsers.forEach((user) => {
+                    const peer = createPeer(user.id, socket.id, stream);
+                    peersRef.current.push({
+                        peerID: user.id,
+                        peer,
                     });
-                    setPeers(peers);
-                }
-            );
+                    peers.push(peer);
+                });
+                setPeers(peers);
+            });
 
-            socketRef.current.on("user joined", (payload) => {
+            socket.on("user joined", (payload) => {
                 const peer = addPeer(payload.signal, payload.callerID, stream);
                 peersRef.current.push({
                     peerID: payload.callerID,
@@ -66,25 +63,25 @@ const SimpleMeeting = ({ location }) => {
                 setPeers((users) => [...users, peer]);
             });
 
-            socketRef.current.on("receiving returned signal", (payload) => {
+            socket.on("receiving returned signal", (payload) => {
                 const item = peersRef.current.find((p) => p.peerID === payload.id);
                 item.peer.signal(payload.signal);
             });
         });
 
-        socketRef.current.on("message", (message) => {
+        socket.on("message", (message) => {
             if (message.text === "clear") {
                 setMessages([]);
             } else setMessages((messages) => [...messages, message]);
         });
 
-        socketRef.current.on("user-disconnected", (user) => {
+        socket.on("user-disconnected", (user) => {
             console.log(`${user.name} has disconnected`);
             setPeers(peers.filter((p) => p.id !== user.id));
         });
 
         return () => {
-            socketRef.current.disconnect({ name, room });
+            socket.disconnect({ name, room });
             console.log("Disconnecting");
         };
     }, []);
@@ -97,7 +94,7 @@ const SimpleMeeting = ({ location }) => {
         });
 
         peer.on("signal", (signal) => {
-            socketRef.current.emit("sending signal", { userToSignal, callerID, signal });
+            socket.emit("sending signal", { userToSignal, callerID, signal });
         });
 
         return peer;
@@ -111,7 +108,7 @@ const SimpleMeeting = ({ location }) => {
         });
 
         peer.on("signal", (signal) => {
-            socketRef.current.emit("returning signal", { signal, callerID });
+            socket.emit("returning signal", { signal, callerID });
         });
 
         peer.signal(incomingSignal);
@@ -142,7 +139,7 @@ const SimpleMeeting = ({ location }) => {
     const sendMessage = (e) => {
         e.preventDefault();
         if (message) {
-            socketRef.current.emit("sendMessage", message, () => {
+            socket.emit("sendMessage", message, () => {
                 setMessage("");
             });
         }
@@ -182,7 +179,7 @@ const SimpleMeeting = ({ location }) => {
                     </Grid>
                 </div>
                 <div>
-                    <Chessboard position="start" />
+                    <ChessBoardContainer />
                 </div>
                 <div>
                     <div className="container">

@@ -1,11 +1,11 @@
 import "./App.css";
 
 import { BrowserRouter as Router, Route } from "react-router-dom";
-
+import { SocketContext, socket } from "./SocketContext";
 import Join from "./components/Join/Join";
-import { Box, CssBaseline,  } from "@material-ui/core";
-import { createMuiTheme } from '@material-ui/core/styles';
-import { MuiThemeProvider } from '@material-ui/core/styles';
+import { Box, CssBaseline } from "@material-ui/core";
+import { createMuiTheme } from "@material-ui/core/styles";
+import { MuiThemeProvider } from "@material-ui/core/styles";
 import SimpleMeeting from "./components/SimpleMeeting/SimpleMeeting";
 
 const theme = createMuiTheme({
@@ -21,7 +21,9 @@ const App = () => {
             <Box bgcolor="primary.secondary" display="flex" flexDirection="column" height="100vh">
                 <Router>
                     <Route path="/" exact component={Join} />
-                    <Route path="/meet" exact component={SimpleMeeting} />
+                    <SocketContext.Provider value={socket}>
+                        <Route path="/meet" exact component={SimpleMeeting} />
+                    </SocketContext.Provider>
                 </Router>
             </Box>
         </MuiThemeProvider>
