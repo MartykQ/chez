@@ -60,6 +60,7 @@ module.exports = socker = (io) => {
         socket.on("disconnect", ({ name, room }) => {
             user = getUser(socket.id);
             if (user) {
+                socket.leave(user.room)
                 console.log(`${user.name} Disconneccted..`);
                 socket.broadcast.to(user.room).emit("user-disconnected", user);
                 removeUser(socket.id);

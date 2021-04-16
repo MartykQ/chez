@@ -6,14 +6,13 @@ ___
 
 Play chess with random people or friends with built in video and text chat
 
-Video chatis implemented with WebRTC wrapper PeerJS
+Video chatis implemented with WebRTC, using simple-peer wrapper
 ____
 
 ### Live Demo
 
-UI: https://epic-blackwell-036893.netlify.app
+[Check here](https://epic-blackwell-036893.netlify.app)
 
-(Backend might be down not to waste free dyno hours on heroku)
 
 ____
 
