@@ -1,4 +1,4 @@
-import React, { createContext}  from 'react';
+import React, { createContext, useState, useEffect } from "react";
 import io from "socket.io-client";
 
 const SOCKET_ENDPOINT = "localhost:5000";
@@ -9,6 +9,25 @@ var connectionOptions = {
     transports: ["websocket"],
 };
 
-console.log("Connecting to socket")
-export const socket = io(SOCKET_ENDPOINT, connectionOptions);
 export const SocketContext = createContext(null);
+
+export const SocketProvider = ({ children }) => {
+
+    const [socket, setSocket] = useState();
+
+    useEffect(() => {
+        initSocket();
+    }, [])
+
+    const initSocket = () => {
+        const newSocket = io(SOCKET_ENDPOINT, connectionOptions);
+        setSocket(newSocket)
+    }
+
+    const destroySocket = () => {
+        socket.disconnect()
+        initSocket();
+    }
+
+    return <SocketContext.Provider value={{socket, initSocket, destroySocket}}>{children}</SocketContext.Provider>;
+};

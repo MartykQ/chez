@@ -5,14 +5,16 @@ import { SocketContext } from '../../SocketContext';
 
 const ChessBoardContainer = (props) => {
 
-    const socket = useContext(SocketContext);
+    const {socket, initSocket} = useContext(SocketContext);
 
     useEffect(() => {
         console.log("Mounting chessboard");
-        socket.on("message", (message) => {
-            console.log("XD");
-        });
-    }, [])
+        if(socket) {
+            socket.on("message", (message) => {
+                console.log("XD");
+            });
+        }
+    }, [socket])
 
     return (
         <Chessboard position="start" />
