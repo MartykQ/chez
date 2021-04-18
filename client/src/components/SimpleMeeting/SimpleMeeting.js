@@ -31,12 +31,13 @@ const SimpleMeeting = ({ location }) => {
     const [peers, setPeers] = useState([]);
     const peersRef = useRef([]);
     const userVideo = useRef();
-    const socket = useContext(SocketContext);
+    const {socket, initSocket, destroySocket} = useContext(SocketContext);
     const userVideoStream = useRef();
 
     useEffect(() => {
+        console.log("Simple meeting MOUNTED")
         const { parsedName, parsedRoom } = updateRoomInfoFromLocation();
-        console.log(socket)
+        console.log(socket);
         getUserDataStream().then((stream) => {
             userVideoStream.current = stream;
             userVideo.current.srcObject = stream;
@@ -76,12 +77,16 @@ const SimpleMeeting = ({ location }) => {
         });
 
         socket.on("user-disconnected", (user) => {
-            console.log(`${user.name} has disconnected`);
-            setPeers(peers.filter((p) => p.id !== user.id));
+            console.log(`${user.name} has disconnected ${user.id}`);
+            setPeers((peers) => {
+                console.log("prev: ", peers);
+                console.log("aft", peers.filter((p) => p.id !== user.id))
+                return peers.filter((p) => p.id !== user.id);
+            });
         });
 
         return () => {
-            socket.disconnect({ name, room });
+            socket.emit("leaveRoom", null);
             console.log("Disconnecting");
         };
     }, []);
