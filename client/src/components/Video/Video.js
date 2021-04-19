@@ -1,18 +1,16 @@
 import React, { useRef, useEffect } from "react";
 
 const Video = (props) => {
-    const ref = useRef();
+    const videoREf = useRef();
 
     useEffect(() => {
-        console.log("Mounting video with", props.peer);
-
         props.peer.on("stream", (stream) => {
             console.log("VIDEO stream received!!");
-            ref.current.srcObject = stream;
+            videoREf.current.srcObject = stream;
         });
-    }, []);
+    }, [props.peer]);
 
-    return <video ref={ref} autoPlay playsInline></video>;
+    return <video ref={videoREf} autoPlay playsInline></video>;
 };
 
 export default Video;

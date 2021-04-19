@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Container, CssBaseline, TextField, Typography } from "@material-ui/core";
+import { Container, TextField, Typography } from "@material-ui/core";
 import { Button } from "@material-ui/core";
 
 import "./Join.css";
@@ -15,7 +15,7 @@ const Join = () => {
     return (
         <Container component="main" maxWidth="xs">
             <div className={classes.paper}>
-                <Typography variant="h3" fullWidth>
+                <Typography variant="h3">
                     Join room
                 </Typography>
                 <TextField
