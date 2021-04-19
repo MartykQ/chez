@@ -1,25 +1,19 @@
 import { Button, Grid, TextField, Typography } from "@material-ui/core";
 import queryString from "query-string";
-import React, { useEffect, useRef, useState, useContext } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import Peer from "simple-peer";
-import io from "socket.io-client";
+import { SocketContext } from "../../contexts/SocketContext";
+import {
+    createInitiatorPeer,
+    createReceivingPeer,
+    getUserDataStream,
+    setVideoTracksState,
+} from "../../utils/webRTC";
+import ChessBoardContainer from "../ChessBoardContainer/ChessBoardContainer";
 import Messages from "../Messages/Messages";
 import Video from "../Video/Video";
 import VideoScreen from "../VideoScreen/VideoScreen";
-import ChessBoardContainer from "../ChessBoardContainer/ChessBoardContainer";
-import { SocketContext } from "../../SocketContext";
-
 import "./SimpleMeeting.css";
-
-// const SOCKET_ENDPOINT = "https://chez-backend.herokuapp.com";
-const SOCKET_ENDPOINT = "localhost:5000";
-var connectionOptions = {
-    "force new connection": true,
-    reconnectionAttempts: "Infinity",
-    timeout: 10000,
-    transports: ["websocket"],
-};
 
 const SimpleMeeting = ({ location }) => {
     const [name, setName] = useState("");
@@ -30,32 +24,33 @@ const SimpleMeeting = ({ location }) => {
 
     const [peers, setPeers] = useState([]);
     const peersRef = useRef([]);
-    const userVideo = useRef();
-    const {socket, initSocket, destroySocket} = useContext(SocketContext);
+
+    const userVideoElement = useRef();
     const userVideoStream = useRef();
 
+    const { socket } = useContext(SocketContext);
+
+
     useEffect(() => {
-        console.log("Simple meeting MOUNTED")
         const { parsedName, parsedRoom } = updateRoomInfoFromLocation();
-        console.log(socket);
         getUserDataStream().then((stream) => {
             userVideoStream.current = stream;
-            userVideo.current.srcObject = stream;
+            userVideoElement.current.srcObject = stream;
             socket.emit("join room", { name: parsedName, room: parsedRoom }, (allUsers) => {
-                const peers = [];
+                const newPeers = [];
                 allUsers.forEach((user) => {
-                    const peer = createPeer(user.id, socket.id, stream);
+                    const peer = createReceivingPeer(user.id, socket.id, stream, socket);
                     peersRef.current.push({
                         peerID: user.id,
                         peer,
                     });
-                    peers.push(peer);
+                    newPeers.push(peer);
                 });
-                setPeers(peers);
+                setPeers(newPeers);
             });
 
             socket.on("user joined", (payload) => {
-                const peer = addPeer(payload.signal, payload.callerID, stream);
+                const peer = createInitiatorPeer(payload.signal, payload.callerID, stream, socket);
                 peersRef.current.push({
                     peerID: payload.callerID,
                     peer,
@@ -80,7 +75,10 @@ const SimpleMeeting = ({ location }) => {
             console.log(`${user.name} has disconnected ${user.id}`);
             setPeers((peers) => {
                 console.log("prev: ", peers);
-                console.log("aft", peers.filter((p) => p.id !== user.id))
+                console.log(
+                    "aft",
+                    peers.filter((p) => p.id !== user.id)
+                );
                 return peers.filter((p) => p.id !== user.id);
             });
         });
@@ -89,57 +87,7 @@ const SimpleMeeting = ({ location }) => {
             socket.emit("leaveRoom", null);
             console.log("Disconnecting");
         };
-    }, []);
-
-    function createPeer(userToSignal, callerID, stream) {
-        const peer = new Peer({
-            initiator: true,
-            trickle: false,
-            stream,
-        });
-
-        peer.on("signal", (signal) => {
-            socket.emit("sending signal", { userToSignal, callerID, signal });
-        });
-
-        return peer;
-    }
-
-    function addPeer(incomingSignal, callerID, stream) {
-        const peer = new Peer({
-            initiator: false,
-            trickle: false,
-            stream,
-        });
-
-        peer.on("signal", (signal) => {
-            socket.emit("returning signal", { signal, callerID });
-        });
-
-        peer.signal(incomingSignal);
-
-        return peer;
-    }
-
-    const updateRoomInfoFromLocation = () => {
-        const { name, room } = queryString.parse(location.search);
-        setName(name);
-        setRoom(room);
-        return { parsedName: name, parsedRoom: room };
-    };
-
-    const getUserDataStream = (audio = true, video = true) => {
-        return new Promise((resolve, reject) => {
-            navigator.mediaDevices
-                .getUserMedia({ video, audio })
-                .then((dataStream) => {
-                    resolve(dataStream);
-                })
-                .catch(() => {
-                    resolve(null);
-                });
-        });
-    };
+    }, [socket]);
 
     const sendMessage = (e) => {
         e.preventDefault();
@@ -151,14 +99,18 @@ const SimpleMeeting = ({ location }) => {
     };
 
     const toggleCam = () => {
-        userVideoStream.current.getVideoTracks().forEach((track) => {
-            console.log(track);
-            track.enabled = !camToggled;
-        });
+        setVideoTracksState(userVideoStream.current, !camToggled);
         setCamToggled(!camToggled);
     };
 
-    console.log("Rendering component");
+
+    const updateRoomInfoFromLocation = () => {
+        const { name, room } = queryString.parse(location.search);
+        setName(name);
+        setRoom(room);
+        return { parsedName: name, parsedRoom: room };
+    };
+
     return (
         <React.Fragment>
             <Typography variant="h3">Simple Meeting in a room {room}</Typography>
@@ -173,11 +125,11 @@ const SimpleMeeting = ({ location }) => {
                     <Button onClick={toggleCam}>Hide me</Button>
                     <Grid container direction="column" justify="flex-start" alignItems="center">
                         <VideoScreen>
-                            <video ref={userVideo} muted autoPlay />
+                            <video ref={userVideoElement} muted autoPlay />
                         </VideoScreen>
 
                         {peers.map((peer, i) => (
-                            <VideoScreen userName={peer.name}>
+                            <VideoScreen key={i} userName={peer.name}>
                                 <Video key={i} peer={peer}></Video>
                             </VideoScreen>
                         ))}

@@ -12,22 +12,25 @@ var connectionOptions = {
 export const SocketContext = createContext(null);
 
 export const SocketProvider = ({ children }) => {
-
-    const [socket, setSocket] = useState();
+    const [socket, setSocket] = useState(io(SOCKET_ENDPOINT, connectionOptions));
 
     useEffect(() => {
-        initSocket();
-    }, [])
+        //initSocket();
+    }, []);
 
     const initSocket = () => {
         const newSocket = io(SOCKET_ENDPOINT, connectionOptions);
-        setSocket(newSocket)
-    }
+        setSocket(newSocket);
+    };
 
     const destroySocket = () => {
-        socket.disconnect()
+        socket.disconnect();
         initSocket();
-    }
+    };
 
-    return <SocketContext.Provider value={{socket, initSocket, destroySocket}}>{children}</SocketContext.Provider>;
+    return (
+        <SocketContext.Provider value={{ socket, initSocket, destroySocket }}>
+            {children}
+        </SocketContext.Provider>
+    );
 };
